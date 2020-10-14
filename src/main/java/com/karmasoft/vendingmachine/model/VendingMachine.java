@@ -1,21 +1,43 @@
 package com.karmasoft.vendingmachine.model;
 
-public class VendingMachine {
-    Long machineId;
-    Display display;
-    CoinBox cashBox;
-    Changer changer;
-    ProductWindow productWindow;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.persistence.*;
+
+@Entity
+@Table(name = "machines")
+public class VendingMachine {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long headerNumber;
+
+    @Transient
+    private final Display display=new Display();
+
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private CashBox cashBox;
+
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Escrow escrow;
+
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private AvailableChange availableChange;
+
+    @Transient
+    private final ProductWindow productWindow=new ProductWindow();
+
+    @Autowired
     public VendingMachine() {
     }
 
     public Long getMachineId() {
-        return machineId;
+        return id;
     }
 
     public VendingMachine setMachineId(Long machineId) {
-        this.machineId = machineId;
+        this.id = machineId;
         return this;
     }
 
@@ -23,35 +45,28 @@ public class VendingMachine {
         return display;
     }
 
-    public VendingMachine setDisplay(Display display) {
-        this.display = display;
-        return this;
-    }
-
-    public CoinBox getCashBox() {
+    public CashBox getCashBox() {
         return cashBox;
-    }
-
-    public VendingMachine setCashBox(CoinBox cashBox) {
-        this.cashBox = cashBox;
-        return this;
-    }
-
-    public Changer getChanger() {
-        return changer;
-    }
-
-    public VendingMachine setChanger(Changer changer) {
-        this.changer = changer;
-        return this;
     }
 
     public ProductWindow getProductWindow() {
         return productWindow;
     }
 
-    public VendingMachine setProductWindow(ProductWindow productWindow) {
-        this.productWindow = productWindow;
-        return this;
+    public void insertCoin (Coin coin) {
+        escrow.addCoin(coin);
+        getDisplay().setAmount(escrow.getValue());
+    }
+
+    public CoinBox getChangeMax() {
+        return null;
+    }
+
+    public CoinBox getAvailableChange() {
+        return availableChange;
+    }
+
+    public CoinBox getEscrow() {
+        return escrow;
     }
 }

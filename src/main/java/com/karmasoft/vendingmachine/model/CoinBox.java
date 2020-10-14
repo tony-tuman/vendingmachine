@@ -1,14 +1,41 @@
 package com.karmasoft.vendingmachine.model;
 
+import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CoinBox {
-    Map<Coin, Integer> coins;
-    Map<Coin, Integer> maxCoins;
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "box_type")
+public abstract class CoinBox {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", updatable = false, insertable = false )
+    private Long id;
+
+    @OneToOne
+    private VendingMachine vendingMachine;
+
+    @ElementCollection (fetch = FetchType.EAGER)
+    @MapKeyColumn(name="value")
+    @Column(name="number")
+    @CollectionTable(name="coin_stacks", joinColumns=@JoinColumn(name="coinbox_id"))
+    Map<Integer, Integer> coins;
+
+    @Transient
+    Map<Integer, Integer> maxCoins;
 
     public CoinBox() {
         coins = new HashMap<>();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public CoinBox setId(Long id) {
+        this.id = id;
+        return this;
     }
 
     /**
@@ -17,15 +44,15 @@ public class CoinBox {
      * @return 1 if the maximum number of coins is already in the coin box.
      */
     public Integer addCoin (Coin coin) {
-        Integer existingCoins = coins.get(coin);
-        Integer maxNumberOfCoins = coins.get(coin);
+        Integer existingCoins = coins.get(coin.getValue());
+        Integer maxNumberOfCoins = coins.get(coin.getValue());
         if (maxNumberOfCoins != null && maxNumberOfCoins < existingCoins) {
             return 1;
         }
-        if (null == existingCoins) {
-            coins.put(coin, existingCoins + 1);
+        if (null != existingCoins) {
+            coins.put(coin.getValue(), existingCoins + 1);
         } else {
-            coins.put(coin, 1);
+            coins.put(coin.getValue(), 1);
         }
         return 0;
     }
@@ -37,18 +64,18 @@ public class CoinBox {
      * @return the overflow number of coins that cannot fit.
      */
     public Integer addCoins (Coin coin, Integer incomingCoins) {
-        Integer maxNumberOfCoins = maxCoins.get(coin);
-        Integer existingCoins = coins.get(coin);
+        Integer maxNumberOfCoins = maxCoins.get(coin.getValue());
+        Integer existingCoins = coins.get(coin.getValue());
         Integer coinsToAdd = incomingCoins;
         int overflowCoins = 0;
         if (maxNumberOfCoins != null  && incomingCoins + existingCoins > maxNumberOfCoins) {
             coinsToAdd = maxNumberOfCoins-existingCoins;
             overflowCoins = incomingCoins - coinsToAdd;
         }
-        if (null == existingCoins) {
-            coins.put(coin, existingCoins + coinsToAdd);
+        if (null != existingCoins) {
+            coins.put(coin.getValue(), existingCoins + coinsToAdd);
         } else {
-            coins.put(coin, incomingCoins);
+            coins.put(coin.getValue(), incomingCoins);
         }
         return overflowCoins;
     }
@@ -59,9 +86,9 @@ public class CoinBox {
      * @Throws RuntimeException If there are not coins already in the CoinBox
      */
     public void removeCoin (Coin coin) {
-        Integer numberOfCoins = coins.get(coin);
-        if (null != numberOfCoins || numberOfCoins > 0) {
-            coins.put(coin, numberOfCoins - 1);
+        Integer numberOfCoins = coins.get(coin.getValue());
+        if (null != numberOfCoins && numberOfCoins > 0) {
+            coins.put(coin.getValue(), numberOfCoins - 1);
         } else {
             // TODO this needs to a better exception
             throw new RuntimeException();
@@ -72,8 +99,8 @@ public class CoinBox {
     // However the code is actually more readable this way.
     public Integer getValue() {
         int total = 0;
-        for (Coin coin : coins.keySet()) {
-            total += coins.get(coin)*coin.getValue();
+        for (Integer coinValue : coins.keySet()) {
+            total += coins.get(coinValue)*coinValue;
         }
         return total;
     }
@@ -88,7 +115,7 @@ public class CoinBox {
      * @param maxNumber Maximum number of coins of the specified type allowed
      */
     public void setMaxCoins(Coin coin, Integer maxNumber) {
-        maxCoins.put(coin, maxNumber);
+        maxCoins.put(coin.getValue(), maxNumber);
     }
 
     /**
@@ -98,9 +125,9 @@ public class CoinBox {
      * @param overflow CoinBox to catch the overflow if to CoinBox is limited
      */
     public void transferCoins (CoinBox from, CoinBox to, CoinBox overflow) {
-        from.coins.keySet().forEach(coin -> {
-                int overflowAmount = to.addCoins(coin, from.coins.get(coin));
-                overflow.addCoins(coin, overflowAmount);
+        from.coins.keySet().forEach(coinValue -> {
+                int overflowAmount = to.addCoins(Coin.fromValue(coinValue), from.coins.get(coinValue));
+                overflow.addCoins(Coin.fromValue(coinValue), overflowAmount);
             }
         );
     }

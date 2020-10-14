@@ -1,7 +1,8 @@
 package com.karmasoft.vendingmachine.model;
 
 public class Display {
-    String text;
+    String message = "";
+    Integer amount = 0;
     Boolean exactChange;
 
     public Display() {
@@ -9,16 +10,18 @@ public class Display {
     }
 
     private void resetDisplay() {
-        text="0.00";
+        message = "";
+        amount = 0;
         exactChange = false;
     }
 
-    public String getText() {
-        return text;
+    public String getMessage() {
+        return message;
     }
 
-    public Display setText(String text) {
-        this.text = text;
+
+    public Display setMessage(String message) {
+        this.message = message;
         return this;
     }
 
@@ -28,6 +31,15 @@ public class Display {
 
     public Display setExactChange(Boolean exactChange) {
         this.exactChange = exactChange;
+        return this;
+    }
+
+    public Integer getAmount() {
+        return amount;
+    }
+
+    public Display setAmount(Integer amount) {
+        this.amount = amount;
         return this;
     }
 }
