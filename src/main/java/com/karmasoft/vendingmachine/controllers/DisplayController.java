@@ -1,7 +1,6 @@
 package com.karmasoft.vendingmachine.controllers;
 
 import com.karmasoft.vendingmachine.model.CashBox;
-import com.karmasoft.vendingmachine.model.CoinBox;
 import com.karmasoft.vendingmachine.model.VendingMachine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
