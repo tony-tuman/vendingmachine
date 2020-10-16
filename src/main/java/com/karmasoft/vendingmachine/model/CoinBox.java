@@ -4,6 +4,10 @@ import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This class represents a collection of coins with a maximum number of coins that it can hold.
+ * All methods are final.  Subclasses are only allowed to facilitate storing the objects in different tables.
+ */
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "box_type")
@@ -23,17 +27,17 @@ public abstract class CoinBox {
     Map<Integer, Integer> coins;
 
     @Transient
-    Map<Integer, Integer> maxCoins;
+    Map<Integer, Integer> maxCoins = new HashMap<>();
 
     public CoinBox() {
         coins = new HashMap<>();
     }
 
-    public Long getId() {
+    public final Long getId() {
         return id;
     }
 
-    public CoinBox setId(Long id) {
+    public final CoinBox setId(Long id) {
         this.id = id;
         return this;
     }
@@ -41,9 +45,9 @@ public abstract class CoinBox {
     /**
      *
      * @param coin Type of coin to add to the CoinBox
-     * @return 1 if the maximum number of coins is already in the coin box.
+     * @return 1 if the coin is added, 0 if the maximum number of coins is already in the coin box.
      */
-    public Integer addCoin (Coin coin) {
+    public final Integer addCoin (Coin coin) {
         Integer existingCoins = coins.get(coin.getValue());
         Integer maxNumberOfCoins = coins.get(coin.getValue());
         if (maxNumberOfCoins != null && maxNumberOfCoins < existingCoins) {
@@ -63,7 +67,7 @@ public abstract class CoinBox {
      * @param incomingCoins How many coins to add
      * @return the overflow number of coins that cannot fit.
      */
-    public Integer addCoins (Coin coin, Integer incomingCoins) {
+    public final Integer addCoins (Coin coin, Integer incomingCoins) {
         Integer maxNumberOfCoins = maxCoins.get(coin.getValue());
         Integer existingCoins = coins.get(coin.getValue());
         Integer coinsToAdd = incomingCoins;
@@ -85,7 +89,7 @@ public abstract class CoinBox {
      * @param coin what kind of coin
      * @Throws RuntimeException If there are not coins already in the CoinBox
      */
-    public void removeCoin (Coin coin) {
+    public final void removeCoin (Coin coin) {
         Integer numberOfCoins = coins.get(coin.getValue());
         if (null != numberOfCoins && numberOfCoins > 0) {
             coins.put(coin.getValue(), numberOfCoins - 1);
@@ -95,17 +99,15 @@ public abstract class CoinBox {
         }
     }
 
-    // TODO This might be refactored to use streams and a BiConsumer
-    // However the code is actually more readable this way.
-    public Integer getValue() {
-        int total = 0;
-        for (Integer coinValue : coins.keySet()) {
-            total += coins.get(coinValue)*coinValue;
-        }
-        return total;
+    /** Gets the value of all coins in the coin box
+     * @return total value of the coinbox
+     */
+    public final Integer getValue() {
+        return coins.keySet().stream()
+                .reduce(0, (subtotal, denomination) -> subtotal + (denomination * coins.get(denomination)));
     }
 
-    public void empty() {
+    public final void empty() {
         coins.clear();
     }
 
@@ -114,7 +116,7 @@ public abstract class CoinBox {
      * @param coin Type of coin to set a maximum for
      * @param maxNumber Maximum number of coins of the specified type allowed
      */
-    public void setMaxCoins(Coin coin, Integer maxNumber) {
+    public final void setMaxCoins(Coin coin, Integer maxNumber) {
         maxCoins.put(coin.getValue(), maxNumber);
     }
 
@@ -124,7 +126,7 @@ public abstract class CoinBox {
      * @param to CoinBox to transfer coins into
      * @param overflow CoinBox to catch the overflow if to CoinBox is limited
      */
-    public void transferCoins (CoinBox from, CoinBox to, CoinBox overflow) {
+    public final void transferCoins (CoinBox from, CoinBox to, CoinBox overflow) {
         from.coins.keySet().forEach(coinValue -> {
                 int overflowAmount = to.addCoins(Coin.fromValue(coinValue), from.coins.get(coinValue));
                 overflow.addCoins(Coin.fromValue(coinValue), overflowAmount);
